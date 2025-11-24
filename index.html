@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transcription Vocale</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.2rem;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+
+        .microphone-container {
+            margin: 30px 0;
+            position: relative;
+        }
+
+        .microphone {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(255, 65, 108, 0.4);
+            position: relative;
+            z-index: 2;
+        }
+
+        .microphone:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(255, 65, 108, 0.6);
+        }
+
+        .microphone.recording {
+            background: linear-gradient(135deg, #ff4b2b, #ff416c);
+            animation: pulse 1.5s infinite;
+        }
+
+        .microphone-icon {
+            color: white;
+            font-size: 40px;
+        }
+
+        .status {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            color: #555;
+            min-height: 24px;
+        }
+
+        .transcription-container {
+            margin-top: 30px;
+            text-align: left;
+        }
+
+        .transcription-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        #transcription {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            min-height: 120px;
+            max-height: 200px;
+            overflow-y: auto;
+            color: #495057;
+            line-height: 1.5;
+        }
+
+        .controls {
+            margin-top: 25px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        #sendButton {
+            background: linear-gradient(135deg, #2575fc, #6a11cb);
+            color: white;
+            box-shadow: 0 4px 10px rgba(37, 117, 252, 0.3);
+        }
+
+        #sendButton:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(37, 117, 252, 0.4);
+        }
+
+        #sendButton:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        #clearButton {
+            background: #f8f9fa;
+            color: #495057;
+            border: 1px solid #dee2e6;
+        }
+
+        #clearButton:hover {
+            background: #e9ecef;
+        }
+
+        .wave-animation {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            opacity: 0;
+            z-index: 1;
+        }
+
+        .wave-animation.active {
+            animation: wave 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 65, 108, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 15px rgba(255, 65, 108, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 65, 108, 0);
+            }
+        }
+
+        @keyframes wave {
+            0% {
+                width: 120px;
+                height: 120px;
+                border: 2px solid rgba(255, 65, 108, 0.7);
+                opacity: 1;
+            }
+            100% {
+                width: 200px;
+                height: 200px;
+                border: 2px solid rgba(255, 65, 108, 0);
+                opacity: 0;
+            }
+        }
+
+        .success-message {
+            color: #28a745;
+            font-weight: 600;
+            margin-top: 15px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .success-message.show {
+            opacity: 1;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-weight: 600;
+            margin-top: 15px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .error-message.show {
+            opacity: 1;
+        }
+
+        .webhook-url {
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .webhook-url label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .webhook-url input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Transcription Vocale</h1>
+        <p class="subtitle">Cliquez sur le microphone pour commencer l'enregistrement</p>
+        
+        <div class="webhook-url">
+            <label for="webhookUrl">URL du Webhook n8n :</label>
+            <input type="text" id="webhookUrl" placeholder="https://votre-domaine.n8n.cloud/webhook/..." value="">
+        </div>
+        
+        <div class="microphone-container">
+            <div class="wave-animation" id="waveAnimation"></div>
+            <div class="microphone" id="microphone">
+                <div class="microphone-icon">🎤</div>
+            </div>
+        </div>
+        
+        <div class="status" id="status">Prêt à enregistrer</div>
+        
+        <div class="transcription-container">
+            <div class="transcription-title">Transcription :</div>
+            <div id="transcription">Aucune transcription pour le moment.</div>
+        </div>
+        
+        <div class="controls">
+            <button id="sendButton" disabled>Envoyer vers n8n</button>
+            <button id="clearButton">Effacer</button>
+        </div>
+        
+        <div class="success-message" id="successMessage">Transcription envoyée avec succès !</div>
+        <div class="error-message" id="errorMessage">Erreur lors de l'envoi. Vérifiez l'URL du webhook.</div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Éléments du DOM
+            const microphone = document.getElementById('microphone');
+            const status = document.getElementById('status');
+            const transcription = document.getElementById('transcription');
+            const sendButton = document.getElementById('sendButton');
+            const clearButton = document.getElementById('clearButton');
+            const waveAnimation = document.getElementById('waveAnimation');
+            const successMessage = document.getElementById('successMessage');
+            const errorMessage = document.getElementById('errorMessage');
+            const webhookUrlInput = document.getElementById('webhookUrl');
+            
+            // Variables pour la reconnaissance vocale
+            let recognition;
+            let isRecording = false;
+            let finalTranscript = '';
+            
+            // Vérifier la compatibilité du navigateur
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                status.textContent = "Votre navigateur ne supporte pas la reconnaissance vocale. Essayez avec Chrome ou Edge.";
+                microphone.style.pointerEvents = 'none';
+                microphone.style.opacity = '0.6';
+                return;
+            }
+            
+            // Initialiser la reconnaissance vocale
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'fr-FR';
+            
+            // Événements de la reconnaissance vocale
+            recognition.onstart = function() {
+                isRecording = true;
+                microphone.classList.add('recording');
+                waveAnimation.classList.add('active');
+                status.textContent = "Enregistrement en cours... Parlez maintenant.";
+            };
+            
+            recognition.onend = function() {
+                isRecording = false;
+                microphone.classList.remove('recording');
+                waveAnimation.classList.remove('active');
+                status.textContent = "Enregistrement terminé.";
+                sendButton.disabled = finalTranscript.trim() === '';
+            };
+            
+            recognition.onresult = function(event) {
+                let interimTranscript = '';
+                
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript + ' ';
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                
+                transcription.textContent = finalTranscript + interimTranscript;
+                sendButton.disabled = finalTranscript.trim() === '';
+            };
+            
+            recognition.onerror = function(event) {
+                console.error('Erreur de reconnaissance:', event.error);
+                status.textContent = "Erreur: " + event.error;
+                isRecording = false;
+                microphone.classList.remove('recording');
+                waveAnimation.classList.remove('active');
+            };
+            
+            // Gestion du clic sur le microphone
+            microphone.addEventListener('click', function() {
+                if (isRecording) {
+                    recognition.stop();
+                } else {
+                    finalTranscript = '';
+                    transcription.textContent = '';
+                    recognition.start();
+                }
+            });
+            
+            // Gestion du bouton d'envoi
+            sendButton.addEventListener('click', function() {
+                const webhookUrl = webhookUrlInput.value.trim();
+                
+                if (!webhookUrl) {
+                    errorMessage.textContent = "Veuillez entrer une URL de webhook valide.";
+                    errorMessage.classList.add('show');
+                    setTimeout(() => errorMessage.classList.remove('show'), 3000);
+                    return;
+                }
+                
+                if (finalTranscript.trim() === '') {
+                    errorMessage.textContent = "Aucune transcription à envoyer.";
+                    errorMessage.classList.add('show');
+                    setTimeout(() => errorMessage.classList.remove('show'), 3000);
+                    return;
+                }
+                
+                // Désactiver le bouton pendant l'envoi
+                sendButton.disabled = true;
+                sendButton.textContent = "Envoi en cours...";
+                
+                // Envoyer la transcription au webhook n8n
+                fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        transcription: finalTranscript.trim(),
+                        timestamp: new Date().toISOString()
+                    })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        successMessage.classList.add('show');
+                        setTimeout(() => successMessage.classList.remove('show'), 3000);
+                    } else {
+                        throw new Error('Erreur HTTP: ' + response.status);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    errorMessage.textContent = "Erreur lors de l'envoi: " + error.message;
+                    errorMessage.classList.add('show');
+                    setTimeout(() => errorMessage.classList.remove('show'), 3000);
+                })
+                .finally(() => {
+                    sendButton.disabled = false;
+                    sendButton.textContent = "Envoyer vers n8n";
+                });
+            });
+            
+            // Gestion du bouton d'effacement
+            clearButton.addEventListener('click', function() {
+                finalTranscript = '';
+                transcription.textContent = 'Aucune transcription pour le moment.';
+                sendButton.disabled = true;
+                status.textContent = "Prêt à enregistrer";
+            });
+        });
+    </script>
+</body>
+</html>
