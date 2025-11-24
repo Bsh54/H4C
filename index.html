@@ -62,6 +62,7 @@
             box-shadow: 0 5px 15px rgba(255, 65, 108, 0.4);
             position: relative;
             z-index: 2;
+            border: none;
         }
 
         .microphone:hover {
@@ -107,6 +108,8 @@
             overflow-y: auto;
             color: #495057;
             line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
         }
 
         .controls {
@@ -241,6 +244,27 @@
             font-size: 1rem;
         }
 
+        .language-selector {
+            margin-top: 15px;
+            text-align: left;
+        }
+
+        .language-selector label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .language-selector select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            background-color: white;
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 25px;
@@ -270,11 +294,22 @@
             <input type="text" id="webhookUrl" placeholder="https://votre-domaine.n8n.cloud/webhook/..." value="">
         </div>
         
+        <div class="language-selector">
+            <label for="languageSelect">Langue de reconnaissance :</label>
+            <select id="languageSelect">
+                <option value="fr-FR">Français (France)</option>
+                <option value="en-US">Anglais (États-Unis)</option>
+                <option value="es-ES">Espagnol (Espagne)</option>
+                <option value="de-DE">Allemand (Allemagne)</option>
+                <option value="it-IT">Italien (Italie)</option>
+            </select>
+        </div>
+        
         <div class="microphone-container">
             <div class="wave-animation" id="waveAnimation"></div>
-            <div class="microphone" id="microphone">
+            <button class="microphone" id="microphone" aria-label="Démarrer/arrêter l'enregistrement">
                 <div class="microphone-icon">🎤</div>
-            </div>
+            </button>
         </div>
         
         <div class="status" id="status">Prêt à enregistrer</div>
@@ -305,6 +340,7 @@
             const successMessage = document.getElementById('successMessage');
             const errorMessage = document.getElementById('errorMessage');
             const webhookUrlInput = document.getElementById('webhookUrl');
+            const languageSelect = document.getElementById('languageSelect');
             
             // Variables pour la reconnaissance vocale
             let recognition;
@@ -324,7 +360,12 @@
             recognition = new SpeechRecognition();
             recognition.continuous = true;
             recognition.interimResults = true;
-            recognition.lang = 'fr-FR';
+            recognition.lang = languageSelect.value;
+            
+            // Mettre à jour la langue quand elle change
+            languageSelect.addEventListener('change', function() {
+                recognition.lang = this.value;
+            });
             
             // Événements de la reconnaissance vocale
             recognition.onstart = function() {
@@ -332,6 +373,7 @@
                 microphone.classList.add('recording');
                 waveAnimation.classList.add('active');
                 status.textContent = "Enregistrement en cours... Parlez maintenant.";
+                sendButton.disabled = true;
             };
             
             recognition.onend = function() {
@@ -361,10 +403,30 @@
             
             recognition.onerror = function(event) {
                 console.error('Erreur de reconnaissance:', event.error);
-                status.textContent = "Erreur: " + event.error;
+                
+                let errorText = "Erreur: ";
+                switch(event.error) {
+                    case 'not-allowed':
+                        errorText += "Microphone non autorisé. Vérifiez les permissions.";
+                        break;
+                    case 'no-speech':
+                        errorText += "Aucune parole détectée.";
+                        break;
+                    case 'audio-capture':
+                        errorText += "Aucun microphone détecté.";
+                        break;
+                    case 'network':
+                        errorText += "Erreur réseau.";
+                        break;
+                    default:
+                        errorText += event.error;
+                }
+                
+                status.textContent = errorText;
                 isRecording = false;
                 microphone.classList.remove('recording');
                 waveAnimation.classList.remove('active');
+                sendButton.disabled = finalTranscript.trim() === '';
             };
             
             // Gestion du clic sur le microphone
@@ -374,7 +436,14 @@
                 } else {
                     finalTranscript = '';
                     transcription.textContent = '';
-                    recognition.start();
+                    recognition.lang = languageSelect.value;
+                    
+                    try {
+                        recognition.start();
+                    } catch (error) {
+                        console.error("Erreur au démarrage:", error);
+                        status.textContent = "Erreur au démarrage de l'enregistrement.";
+                    }
                 }
             });
             
@@ -383,16 +452,17 @@
                 const webhookUrl = webhookUrlInput.value.trim();
                 
                 if (!webhookUrl) {
-                    errorMessage.textContent = "Veuillez entrer une URL de webhook valide.";
-                    errorMessage.classList.add('show');
-                    setTimeout(() => errorMessage.classList.remove('show'), 3000);
+                    showError("Veuillez entrer une URL de webhook valide.");
+                    return;
+                }
+                
+                if (!isValidUrl(webhookUrl)) {
+                    showError("L'URL du webhook n'est pas valide.");
                     return;
                 }
                 
                 if (finalTranscript.trim() === '') {
-                    errorMessage.textContent = "Aucune transcription à envoyer.";
-                    errorMessage.classList.add('show');
-                    setTimeout(() => errorMessage.classList.remove('show'), 3000);
+                    showError("Aucune transcription à envoyer.");
                     return;
                 }
                 
@@ -408,22 +478,20 @@
                     },
                     body: JSON.stringify({
                         transcription: finalTranscript.trim(),
-                        timestamp: new Date().toISOString()
+                        timestamp: new Date().toISOString(),
+                        language: recognition.lang
                     })
                 })
                 .then(response => {
                     if (response.ok) {
-                        successMessage.classList.add('show');
-                        setTimeout(() => successMessage.classList.remove('show'), 3000);
+                        showSuccess("Transcription envoyée avec succès !");
                     } else {
                         throw new Error('Erreur HTTP: ' + response.status);
                     }
                 })
                 .catch(error => {
                     console.error('Erreur:', error);
-                    errorMessage.textContent = "Erreur lors de l'envoi: " + error.message;
-                    errorMessage.classList.add('show');
-                    setTimeout(() => errorMessage.classList.remove('show'), 3000);
+                    showError("Erreur lors de l'envoi: " + error.message);
                 })
                 .finally(() => {
                     sendButton.disabled = false;
@@ -437,7 +505,38 @@
                 transcription.textContent = 'Aucune transcription pour le moment.';
                 sendButton.disabled = true;
                 status.textContent = "Prêt à enregistrer";
+                hideMessages();
             });
+            
+            // Fonctions utilitaires
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.classList.add('show');
+                setTimeout(() => errorMessage.classList.remove('show'), 5000);
+            }
+            
+            function showSuccess(message) {
+                successMessage.textContent = message;
+                successMessage.classList.add('show');
+                setTimeout(() => successMessage.classList.remove('show'), 5000);
+            }
+            
+            function hideMessages() {
+                successMessage.classList.remove('show');
+                errorMessage.classList.remove('show');
+            }
+            
+            function isValidUrl(string) {
+                try {
+                    new URL(string);
+                    return true;
+                } catch (_) {
+                    return false;
+                }
+            }
+            
+            // Gestion du chargement de la page - focus sur le champ URL
+            webhookUrlInput.focus();
         });
     </script>
 </body>
