@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enregistreur Audio</title>
+    <title>Enregistreur Audio avec Sauvegarde</title>
     <style>
         * {
             margin: 0;
@@ -22,7 +22,7 @@
         }
 
         .container {
-            background-color: rgba(255, 255, 255, 0.9);
+            background-color: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             padding: 40px;
@@ -173,6 +173,23 @@
         .hidden {
             display: none;
         }
+
+        .file-link {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+            word-break: break-all;
+        }
+
+        .file-link a {
+            color: #2575fc;
+            text-decoration: none;
+        }
+
+        .file-link a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -188,7 +205,7 @@
             <div id="timer" class="timer hidden">00:00</div>
             
             <div id="controls" class="controls hidden">
-                <button id="saveBtn" class="btn save-btn">OK - Envoyer</button>
+                <button id="saveBtn" class="btn save-btn">OK - Sauvegarder</button>
                 <button id="cancelBtn" class="btn cancel-btn">Annuler</button>
             </div>
         </div>
@@ -196,6 +213,10 @@
         <div id="status" class="status"></div>
         
         <audio id="audioPlayer" class="audio-player hidden" controls></audio>
+        
+        <div id="fileLink" class="file-link hidden">
+            <p>Fichier sauvegardé: <a id="fileUrl" href="#" target="_blank">Lien vers l'audio</a></p>
+        </div>
     </div>
 
     <script>
@@ -204,6 +225,7 @@
         let audioChunks = [];
         let recordingStartTime;
         let timerInterval;
+        let audioBlob = null;
         
         // Éléments DOM
         const recordBtn = document.getElementById('recordBtn');
@@ -213,6 +235,8 @@
         const cancelBtn = document.getElementById('cancelBtn');
         const status = document.getElementById('status');
         const audioPlayer = document.getElementById('audioPlayer');
+        const fileLink = document.getElementById('fileLink');
+        const fileUrl = document.getElementById('fileUrl');
         
         // URL du webhook (à remplacer par votre URL)
         const webhookURL = 'https://n8n.dev2.dev-id.fr/webhook-test/626ce70b-ee52-404c-a571-02b5de48da06';
@@ -248,11 +272,12 @@
                 // Événement de fin d'enregistrement
                 mediaRecorder.onstop = () => {
                     // Créer un blob audio
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
                     
                     // Créer un URL pour la prévisualisation
                     const audioUrl = URL.createObjectURL(audioBlob);
                     audioPlayer.src = audioUrl;
+                    audioPlayer.classList.remove('hidden');
                     
                     // Arrêter le flux
                     stream.getTracks().forEach(track => track.stop());
@@ -267,6 +292,7 @@
                 recordBtn.innerHTML = '<span class="icon">⏹️</span><span>Arrêter</span>';
                 timer.classList.remove('hidden');
                 controls.classList.add('hidden');
+                fileLink.classList.add('hidden');
                 
                 // Démarrer le timer
                 timerInterval = setInterval(updateTimer, 1000);
@@ -294,48 +320,65 @@
                 controls.classList.remove('hidden');
                 
                 // Afficher le statut
-                showStatus('Enregistrement terminé. Cliquez sur "OK" pour envoyer.', 'info');
+                showStatus('Enregistrement terminé. Cliquez sur "OK" pour sauvegarder.', 'info');
             }
         }
         
-        // Envoi de l'audio via webhook
-        async function sendAudio() {
-            if (audioChunks.length === 0) {
-                showStatus('Aucun enregistrement à envoyer', 'error');
+        // Sauvegarde de l'audio et envoi du lien via webhook
+        async function saveAndSendAudio() {
+            if (!audioBlob) {
+                showStatus('Aucun enregistrement à sauvegarder', 'error');
                 return;
             }
             
             try {
-                showStatus('Envoi en cours...', 'info');
+                showStatus('Sauvegarde en cours...', 'info');
                 
-                // Créer un blob audio
-                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                // Générer un nom de fichier unique
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                const filename = `enregistrement-${timestamp}.wav`;
                 
-                // Créer un FormData pour l'envoi
-                const formData = new FormData();
-                formData.append('audio', audioBlob, 'enregistrement.wav');
-                formData.append('timestamp', new Date().toISOString());
+                // Simuler la sauvegarde sur un serveur
+                // Dans un cas réel, vous enverriez le fichier à votre serveur
+                const audioUrl = URL.createObjectURL(audioBlob);
                 
-                // Envoyer via fetch
+                // Afficher le lien de téléchargement
+                fileUrl.href = audioUrl;
+                fileUrl.textContent = filename;
+                fileLink.classList.remove('hidden');
+                
+                // Préparer les données à envoyer via webhook
+                const webhookData = {
+                    filename: filename,
+                    url: audioUrl, // Dans un cas réel, ce serait l'URL de votre serveur
+                    timestamp: new Date().toISOString(),
+                    size: audioBlob.size,
+                    duration: Math.floor((Date.now() - recordingStartTime) / 1000)
+                };
+                
+                // Envoyer les données via webhook
                 const response = await fetch(webhookURL, {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(webhookData)
                 });
                 
                 if (response.ok) {
-                    showStatus('Audio envoyé avec succès!', 'success');
+                    showStatus('Audio sauvegardé et lien envoyé avec succès!', 'success');
                     
                     // Réinitialiser l'interface après un délai
                     setTimeout(() => {
                         resetInterface();
-                    }, 3000);
+                    }, 5000);
                 } else {
                     throw new Error(`Erreur HTTP: ${response.status}`);
                 }
                 
             } catch (error) {
-                console.error('Erreur lors de l\'envoi:', error);
-                showStatus('Erreur lors de l\'envoi de l\'audio', 'error');
+                console.error('Erreur lors de la sauvegarde:', error);
+                showStatus('Erreur lors de la sauvegarde de l\'audio', 'error');
             }
         }
         
@@ -367,9 +410,11 @@
             timer.classList.add('hidden');
             controls.classList.add('hidden');
             audioPlayer.classList.add('hidden');
+            fileLink.classList.add('hidden');
             status.classList.remove('success', 'error', 'info');
             status.textContent = '';
             audioChunks = [];
+            audioBlob = null;
         }
         
         // Affichage du statut
@@ -388,9 +433,8 @@
             }
         });
         
-        saveBtn.addEventListener('click', sendAudio);
+        saveBtn.addEventListener('click', saveAndSendAudio);
         cancelBtn.addEventListener('click', cancelRecording);
     </script>
 </body>
 </html>
-
