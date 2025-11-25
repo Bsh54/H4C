@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enregistreur Audio avec Sauvegarde</title>
+    <title>Enregistreur Audio avec Webhook n8n</title>
     <style>
         * {
             margin: 0;
@@ -174,27 +174,62 @@
             display: none;
         }
 
-        .file-link {
-            margin-top: 15px;
+        .webhook-config {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .webhook-config h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .form-group input {
+            width: 100%;
             padding: 10px;
-            background-color: #f5f5f5;
+            border: 1px solid #ddd;
             border-radius: 5px;
-            word-break: break-all;
+            font-size: 14px;
         }
 
-        .file-link a {
-            color: #2575fc;
-            text-decoration: none;
+        .form-group input:focus {
+            outline: none;
+            border-color: #2575fc;
         }
 
-        .file-link a:hover {
-            text-decoration: underline;
+        .test-btn {
+            background-color: #2575fc;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .test-btn:hover {
+            background-color: #1c65e0;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Enregistreur Audio</h1>
+        <h1>Enregistreur Audio avec Webhook n8n</h1>
         
         <div class="recorder">
             <button id="recordBtn" class="record-btn">
@@ -205,7 +240,7 @@
             <div id="timer" class="timer hidden">00:00</div>
             
             <div id="controls" class="controls hidden">
-                <button id="saveBtn" class="btn save-btn">OK - Sauvegarder</button>
+                <button id="saveBtn" class="btn save-btn">OK - Envoyer</button>
                 <button id="cancelBtn" class="btn cancel-btn">Annuler</button>
             </div>
         </div>
@@ -214,8 +249,17 @@
         
         <audio id="audioPlayer" class="audio-player hidden" controls></audio>
         
-        <div id="fileLink" class="file-link hidden">
-            <p>Fichier sauvegardé: <a id="fileUrl" href="#" target="_blank">Lien vers l'audio</a></p>
+        <div class="webhook-config">
+            <h3>Configuration Webhook</h3>
+            <div class="form-group">
+                <label for="webhookUrl">URL du Webhook n8n:</label>
+                <input type="text" id="webhookUrl" placeholder="https://votre-domaine.com/webhook/audio" value="https://votre-domaine.com/webhook/audio">
+            </div>
+            <div class="form-group">
+                <label for="fileName">Nom du fichier (optionnel):</label>
+                <input type="text" id="fileName" placeholder="mon-enregistrement">
+            </div>
+            <button id="testWebhook" class="test-btn">Tester la connexion</button>
         </div>
     </div>
 
@@ -235,11 +279,9 @@
         const cancelBtn = document.getElementById('cancelBtn');
         const status = document.getElementById('status');
         const audioPlayer = document.getElementById('audioPlayer');
-        const fileLink = document.getElementById('fileLink');
-        const fileUrl = document.getElementById('fileUrl');
-        
-        // URL du webhook (à remplacer par votre URL)
-        const webhookURL = 'https://n8n.dev2.dev-id.fr/webhook-test/626ce70b-ee52-404c-a571-02b5de48da06';
+        const webhookUrlInput = document.getElementById('webhookUrl');
+        const fileNameInput = document.getElementById('fileName');
+        const testWebhookBtn = document.getElementById('testWebhook');
         
         // Fonction pour formater le temps
         function formatTime(seconds) {
@@ -258,21 +300,34 @@
         async function startRecording() {
             try {
                 // Demander l'accès au microphone
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        sampleRate: 16000,
+                        channelCount: 1,
+                        echoCancellation: true
+                    } 
+                });
                 
-                // Initialiser MediaRecorder
-                mediaRecorder = new MediaRecorder(stream);
+                // Initialiser MediaRecorder avec un format compatible
+                const options = {
+                    mimeType: 'audio/webm;codecs=opus',
+                    audioBitsPerSecond: 128000
+                };
+                
+                mediaRecorder = new MediaRecorder(stream, options);
                 audioChunks = [];
                 
                 // Événement pour collecter les données audio
                 mediaRecorder.ondataavailable = (event) => {
-                    audioChunks.push(event.data);
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
                 };
                 
                 // Événement de fin d'enregistrement
                 mediaRecorder.onstop = () => {
                     // Créer un blob audio
-                    audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                     
                     // Créer un URL pour la prévisualisation
                     const audioUrl = URL.createObjectURL(audioBlob);
@@ -284,7 +339,7 @@
                 };
                 
                 // Démarrer l'enregistrement
-                mediaRecorder.start();
+                mediaRecorder.start(1000); // Collecter des données chaque seconde
                 recordingStartTime = Date.now();
                 
                 // Mettre à jour l'interface
@@ -292,7 +347,6 @@
                 recordBtn.innerHTML = '<span class="icon">⏹️</span><span>Arrêter</span>';
                 timer.classList.remove('hidden');
                 controls.classList.add('hidden');
-                fileLink.classList.add('hidden');
                 
                 // Démarrer le timer
                 timerInterval = setInterval(updateTimer, 1000);
@@ -320,65 +374,95 @@
                 controls.classList.remove('hidden');
                 
                 // Afficher le statut
-                showStatus('Enregistrement terminé. Cliquez sur "OK" pour sauvegarder.', 'info');
+                showStatus('Enregistrement terminé. Cliquez sur "OK" pour envoyer.', 'info');
             }
         }
         
-        // Sauvegarde de l'audio et envoi du lien via webhook
-        async function saveAndSendAudio() {
+        // Envoi de l'audio via webhook
+        async function sendAudio() {
             if (!audioBlob) {
-                showStatus('Aucun enregistrement à sauvegarder', 'error');
+                showStatus('Aucun enregistrement à envoyer', 'error');
+                return;
+            }
+            
+            const webhookURL = webhookUrlInput.value.trim();
+            if (!webhookURL) {
+                showStatus('Veuillez configurer l\'URL du webhook', 'error');
                 return;
             }
             
             try {
-                showStatus('Sauvegarde en cours...', 'info');
+                showStatus('Envoi en cours...', 'info');
                 
-                // Générer un nom de fichier unique
+                // Générer un nom de fichier
                 const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-                const filename = `enregistrement-${timestamp}.wav`;
+                const customName = fileNameInput.value.trim();
+                const filename = customName ? 
+                    `${customName}.webm` : 
+                    `enregistrement-${timestamp}.webm`;
                 
-                // Simuler la sauvegarde sur un serveur
-                // Dans un cas réel, vous enverriez le fichier à votre serveur
-                const audioUrl = URL.createObjectURL(audioBlob);
+                // Créer FormData avec le fichier binaire
+                const formData = new FormData();
+                formData.append('data', audioBlob, filename);
+                formData.append('filename', filename);
+                formData.append('timestamp', timestamp);
+                formData.append('duration', Math.floor((Date.now() - recordingStartTime) / 1000));
+                formData.append('size', audioBlob.size);
+                formData.append('mimeType', 'audio/webm');
                 
-                // Afficher le lien de téléchargement
-                fileUrl.href = audioUrl;
-                fileUrl.textContent = filename;
-                fileLink.classList.remove('hidden');
-                
-                // Préparer les données à envoyer via webhook
-                const webhookData = {
-                    filename: filename,
-                    url: audioUrl, // Dans un cas réel, ce serait l'URL de votre serveur
-                    timestamp: new Date().toISOString(),
-                    size: audioBlob.size,
-                    duration: Math.floor((Date.now() - recordingStartTime) / 1000)
-                };
-                
-                // Envoyer les données via webhook
+                // Envoyer via fetch
                 const response = await fetch(webhookURL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(webhookData)
+                    body: formData
                 });
                 
                 if (response.ok) {
-                    showStatus('Audio sauvegardé et lien envoyé avec succès!', 'success');
+                    const responseData = await response.text();
+                    showStatus('Audio envoyé avec succès à n8n!', 'success');
                     
                     // Réinitialiser l'interface après un délai
                     setTimeout(() => {
                         resetInterface();
-                    }, 5000);
+                    }, 3000);
+                } else {
+                    throw new Error(`Erreur HTTP: ${response.status} - ${response.statusText}`);
+                }
+                
+            } catch (error) {
+                console.error('Erreur lors de l\'envoi:', error);
+                showStatus(`Erreur lors de l'envoi: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test de la connexion webhook
+        async function testWebhook() {
+            const webhookURL = webhookUrlInput.value.trim();
+            if (!webhookURL) {
+                showStatus('Veuillez entrer une URL de webhook', 'error');
+                return;
+            }
+            
+            try {
+                showStatus('Test de connexion en cours...', 'info');
+                
+                const testData = new FormData();
+                testData.append('test', 'true');
+                testData.append('timestamp', new Date().toISOString());
+                
+                const response = await fetch(webhookURL, {
+                    method: 'POST',
+                    body: testData
+                });
+                
+                if (response.ok) {
+                    showStatus('Connexion au webhook réussie!', 'success');
                 } else {
                     throw new Error(`Erreur HTTP: ${response.status}`);
                 }
                 
             } catch (error) {
-                console.error('Erreur lors de la sauvegarde:', error);
-                showStatus('Erreur lors de la sauvegarde de l\'audio', 'error');
+                console.error('Erreur lors du test:', error);
+                showStatus(`Erreur de connexion: ${error.message}`, 'error');
             }
         }
         
@@ -410,7 +494,6 @@
             timer.classList.add('hidden');
             controls.classList.add('hidden');
             audioPlayer.classList.add('hidden');
-            fileLink.classList.add('hidden');
             status.classList.remove('success', 'error', 'info');
             status.textContent = '';
             audioChunks = [];
@@ -433,8 +516,9 @@
             }
         });
         
-        saveBtn.addEventListener('click', saveAndSendAudio);
+        saveBtn.addEventListener('click', sendAudio);
         cancelBtn.addEventListener('click', cancelRecording);
+        testWebhookBtn.addEventListener('click', testWebhook);
     </script>
 </body>
 </html>
