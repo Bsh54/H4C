@@ -3,522 +3,1655 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enregistreur Audio avec Webhook n8n</title>
+    <title>Formulaire d'Œuvre - Artisanat 4.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
+        /* ===== VARIABLES & RESET ===== */
+        :root {
+            --primary-bg: #1F2124;
+            --card-bg: #383633;
+            --accent: #FFB800;
+            --accent-hover: #e6a600;
+            --text-light: #FFFFFF;
+            --text-muted: #CCCCCC;
+            --border-radius: 12px;
+            --transition: all 0.3s ease;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         body {
-            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-light);
+            line-height: 1.6;
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
         }
 
-        .container {
-            background-color: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            padding: 40px;
+        /* Arrière-plan avec formes circulaires abstraites */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            max-width: 500px;
-            text-align: center;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 10% 20%, rgba(255, 184, 0, 0.05) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(255, 184, 0, 0.05) 0%, transparent 20%),
+                radial-gradient(circle at 50% 50%, rgba(255, 184, 0, 0.03) 0%, transparent 30%);
+            z-index: -1;
+        }
+
+        /* ===== TYPOGRAPHIE ===== */
+        h1, h2, h3, h4 {
+            font-weight: 600;
+            margin-bottom: 1rem;
         }
 
         h1 {
-            color: #333;
-            margin-bottom: 30px;
-            font-weight: 600;
+            font-size: 2.5rem;
         }
 
-        .recorder {
-            margin-bottom: 30px;
+        h2 {
+            font-size: 2rem;
         }
 
-        .record-btn {
-            background-color: #ff4d4d;
+        h3 {
+            font-size: 1.5rem;
+        }
+
+        p {
+            margin-bottom: 1rem;
+        }
+
+        /* ===== LAYOUT & CONTAINERS ===== */
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        /* ===== FORM STYLES ===== */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--border-radius);
+            color: var(--text-light);
+            font-family: 'Poppins', sans-serif;
+            transition: var(--transition);
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(255, 184, 0, 0.2);
+        }
+
+        /* ===== UPLOAD SECTIONS ===== */
+        .upload-section {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            color: var(--accent);
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .upload-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-card {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            text-align: center;
+            transition: var(--transition);
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .upload-card:hover {
+            border-color: var(--accent);
+            background-color: rgba(255, 184, 0, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+
+        .upload-card-title {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-card-hint {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .upload-input {
+            display: none;
+        }
+
+        /* ===== PREVIEW SECTIONS ===== */
+        .preview-section {
+            margin-top: 1.5rem;
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .preview-item {
+            position: relative;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            aspect-ratio: 1;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .remove-preview {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: rgba(0, 0, 0, 0.7);
             color: white;
             border: none;
             border-radius: 50%;
-            width: 80px;
-            height: 80px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(255, 77, 77, 0.4);
+            width: 25px;
+            height: 25px;
             display: flex;
-            flex-direction: column;
-            justify-content: center;
             align-items: center;
-            margin: 0 auto;
+            justify-content: center;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
         }
 
-        .record-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 20px rgba(255, 77, 77, 0.6);
+        .remove-preview:hover {
+            background-color: rgba(0, 0, 0, 0.9);
         }
 
-        .record-btn.recording {
-            background-color: #4CAF50;
-            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+        /* ===== RECORDER STYLES ===== */
+        .recorder-section {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .recorder-container {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .recorder-controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .recorder-timer {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+
+        .recorder-status {
+            text-align: center;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .recorder-visualizer {
+            width: 100%;
+            height: 80px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: var(--border-radius);
+            margin-bottom: 1rem;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 2px;
+            padding: 10px;
+        }
+
+        .visualizer-bar {
+            width: 8px;
+            background: linear-gradient(to top, var(--accent), #ffd166);
+            border-radius: 4px 4px 0 0;
+            transition: height 0.1s ease;
+            min-height: 5px;
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background-color: var(--accent);
+            color: var(--primary-bg);
+            border: none;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(255, 184, 0, 0.3);
+            background-color: var(--accent-hover);
+        }
+
+        .btn:disabled {
+            background-color: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn:disabled:hover {
+            background-color: #666;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(255, 184, 0, 0.1);
+        }
+
+        .btn-large {
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+        }
+
+        .btn-full {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .btn-icon {
+            width: 80px;
+            height: 90px;
+            padding: 0;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 3rem;
+        }
+
+        .btn-record {
+            background: linear-gradient(135deg, #ff6b6b, #ff4757);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-record:hover {
+            background: linear-gradient(135deg, #ff5252, #ff3742);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
+        }
+
+        .btn-record.recording {
             animation: pulse 1.5s infinite;
+            background: linear-gradient(135deg, #ff3838, #ff1e1e);
         }
 
-        .record-btn.recording:hover {
-            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
+        .btn-audio {
+            background: linear-gradient(135deg, #4834d4, #686de0);
+            color: white;
+        }
+
+        .btn-audio:hover {
+            background: linear-gradient(135deg, #3c30b8, #5f63d4);
         }
 
         @keyframes pulse {
             0% {
-                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7);
             }
-            50% {
-                transform: scale(1.05);
+            70% {
+                box-shadow: 0 0 0 15px rgba(255, 71, 87, 0);
             }
             100% {
-                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 71, 87, 0);
             }
         }
 
-        .icon {
-            font-size: 24px;
-            margin-bottom: 5px;
+        /* ===== TRANSCRIPTION STYLES ===== */
+        .transcription-container {
+            margin-top: 1.5rem;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
         }
 
-        .timer {
-            font-size: 24px;
-            font-weight: bold;
-            margin: 20px 0;
-            color: #333;
+        .transcription-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
-        .controls {
+        .transcription-text {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            min-height: 150px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            font-size: 1rem;
+        }
+
+        .transcription-text.editable {
+            background-color: rgba(255, 184, 0, 0.1);
+            border: 1px solid var(--accent);
+        }
+
+        .transcription-history {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .transcription-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .audio-wave {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            height: 40px;
+            margin: 1rem 0;
+        }
+
+        .wave-bar {
+            width: 4px;
+            background-color: var(--accent);
+            border-radius: 2px;
+            animation: wave 1.5s ease-in-out infinite;
+        }
+
+        .wave-bar:nth-child(2) { animation-delay: 0.1s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.2s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.3s; }
+        .wave-bar:nth-child(5) { animation-delay: 0.4s; }
+
+        @keyframes wave {
+            0%, 100% { height: 10px; }
+            50% { height: 30px; }
+        }
+
+        /* ===== LOADING ANIMATION ===== */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(31, 33, 36, 0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            flex-direction: column;
+        }
+
+        .loading-spinner {
+            width: 80px;
+            height: 80px;
+            border: 6px solid rgba(255, 184, 0, 0.3);
+            border-top: 6px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 2rem;
+        }
+
+        .loading-text {
+            font-size: 1.2rem;
+            color: var(--text-light);
+            text-align: center;
+        }
+
+        .loading-dots {
+            display: inline-block;
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        /* ===== RESPONSE CONTAINER ===== */
+        .response-container {
+            margin-top: 2rem;
+            background-color: rgba(255, 184, 0, 0.1);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            border: 1px solid var(--accent);
+            display: none;
+        }
+
+        .response-header {
+            color: var(--accent);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .response-content {
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        /* ===== PRESENTATION PAGE STYLES ===== */
+        .presentation-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: none;
+        }
+
+        .presentation-header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-top: 2rem;
+        }
+
+        .presentation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .material-list, .technique-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .material-item, .technique-item {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 0.8rem 1rem;
+            margin-bottom: 0.8rem;
+            border-radius: var(--border-radius);
+            border-left: 3px solid var(--accent);
+            transition: var(--transition);
+        }
+
+        .material-item:hover, .technique-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .language-toggle {
             display: flex;
             justify-content: center;
-            gap: 15px;
-            margin-top: 20px;
+            margin-bottom: 2rem;
         }
 
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 50px;
-            font-size: 16px;
+        .toggle-btn {
+            background-color: transparent;
+            border: 2px solid var(--accent);
+            color: var(--accent);
+            padding: 0.5rem 1.5rem;
+            border-radius: 30px;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 500;
+            transition: var(--transition);
+            margin: 0 0.5rem;
         }
 
-        .save-btn {
-            background-color: #4CAF50;
-            color: white;
-            box-shadow: 0 4px 10px rgba(76, 175, 80, 0.3);
+        .toggle-btn.active {
+            background-color: var(--accent);
+            color: var(--primary-bg);
         }
 
-        .save-btn:hover {
-            background-color: #45a049;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(76, 175, 80, 0.4);
+        .toggle-btn:hover {
+            background-color: var(--accent-hover);
+            color: var(--primary-bg);
         }
 
-        .cancel-btn {
-            background-color: #f44336;
-            color: white;
-            box-shadow: 0 4px 10px rgba(244, 67, 54, 0.3);
-        }
-
-        .cancel-btn:hover {
-            background-color: #e53935;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(244, 67, 54, 0.4);
-        }
-
-        .status {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 10px;
-            font-weight: 500;
+        .lang-content {
             display: none;
         }
 
-        .status.success {
-            background-color: #e8f5e9;
-            color: #2e7d32;
+        .lang-content.active {
             display: block;
         }
 
-        .status.error {
-            background-color: #ffebee;
-            color: #c62828;
-            display: block;
+        .presentation-loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
         }
 
-        .status.info {
-            background-color: #e3f2fd;
-            color: #1565c0;
-            display: block;
+        .presentation-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 184, 0, 0.3);
+            border-top: 4px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
 
-        .audio-player {
-            margin-top: 20px;
-            width: 100%;
+        .back-button {
+            display: flex;
+            justify-content: center;
+            margin-top: 2rem;
         }
 
-        .hidden {
-            display: none;
+        /* ===== RESPONSIVE DESIGN ===== */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            h2 {
+                font-size: 1.7rem;
+            }
+            
+            .upload-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .recorder-controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .transcription-actions {
+                flex-direction: column;
+            }
+            
+            .btn-full-mobile {
+                width: 100%;
+            }
+
+            .btn-icon {
+                width: 70px;
+                height: 70px;
+                font-size: 3rem;
+            }
+
+            .presentation-container {
+                padding: 1rem;
+            }
+            
+            .presentation-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
-        .webhook-config {
-            background-color: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 20px;
-            text-align: left;
+        @media (max-width: 480px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .card {
+                padding: 1.5rem;
+            }
+            
+            .btn {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.9rem;
+            }
+
+            .transcription-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
         }
 
-        .webhook-config h3 {
-            margin-bottom: 15px;
-            color: #333;
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
         }
 
-        .form-group {
-            margin-bottom: 15px;
+        .status-ready {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: #2ecc71;
+            border: 1px solid #2ecc71;
         }
 
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-            color: #555;
+        .status-recording {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
         }
 
-        .form-group input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #2575fc;
-        }
-
-        .test-btn {
-            background-color: #2575fc;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-top: 10px;
-        }
-
-        .test-btn:hover {
-            background-color: #1c65e0;
+        .status-paused {
+            background-color: rgba(241, 196, 15, 0.2);
+            color: #f1c40f;
+            border: 1px solid #f1c40f;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Enregistreur Audio avec Webhook n8n</h1>
-        
-        <div class="recorder">
-            <button id="recordBtn" class="record-btn">
-                <span class="icon">🎙️</span>
-                <span>Enregistrer</span>
-            </button>
-            
-            <div id="timer" class="timer hidden">00:00</div>
-            
-            <div id="controls" class="controls hidden">
-                <button id="saveBtn" class="btn save-btn">OK - Envoyer</button>
-                <button id="cancelBtn" class="btn cancel-btn">Annuler</button>
-            </div>
+    <!-- Overlay de chargement -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">
+            Analyse en cours par l'IA<span class="loading-dots"></span>
         </div>
-        
-        <div id="status" class="status"></div>
-        
-        <audio id="audioPlayer" class="audio-player hidden" controls></audio>
-        
-        <div class="webhook-config">
-            <h3>Configuration Webhook</h3>
-            <div class="form-group">
-                <label for="webhookUrl">URL du Webhook n8n:</label>
-                <input type="text" id="webhookUrl" placeholder="https://votre-domaine.com/webhook/audio" value="https://votre-domaine.com/webhook/audio">
+    </div>
+
+    <!-- Page du formulaire -->
+    <div class="container" id="form-container">
+        <div class="card">
+            <h1><i class="fas fa-plus-circle"></i> Ajouter une Œuvre</h1>
+            <p>Partagez votre création artisanale en ajoutant des photos et une description audio.</p>
+            
+            <form id="artwork-form">
+                <!-- Informations de base -->
+                <div class="form-group">
+                    <label for="artwork-title">Titre de l'œuvre *</label>
+                    <input type="text" id="artwork-title" placeholder="Donnez un titre significatif à votre création" required>
+                </div>
+                
+                <!-- Upload de photos -->
+                <div class="upload-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-camera"></i>
+                        Photos de votre œuvre *
+                    </h3>
+                    <p>Ajoutez 2 photos de votre œuvre sous différents angles.</p>
+                    
+                    <div class="upload-grid">
+                        <div class="upload-card" data-index="1">
+                            <div class="upload-icon">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            <div class="upload-card-title">Photo 1</div>
+                            <div class="upload-card-hint">Vue principale</div>
+                            <input type="file" class="upload-input" data-index="1" accept="image/*">
+                        </div>
+                        
+                        <div class="upload-card" data-index="2">
+                            <div class="upload-icon">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            <div class="upload-card-title">Photo 2</div>
+                            <div class="upload-card-hint">Vue de détail</div>
+                            <input type="file" class="upload-input" data-index="2" accept="image/*">
+                        </div>
+                    </div>
+                    
+                    <div class="preview-section">
+                        <h4>Photos ajoutées :</h4>
+                        <div class="preview-grid" id="photos-preview"></div>
+                    </div>
+                </div>
+                
+                <!-- Enregistrement audio -->
+                <div class="recorder-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-microphone-alt"></i>
+                        Description Audio *
+                    </h3>
+                    <p>Enregistrez une description vocale de votre œuvre. Votre discours sera transcrit en temps réel.</p>
+                    
+                    <div class="status-indicator status-ready" id="status-indicator">
+                        <i class="fas fa-check-circle"></i>
+                        <span id="status-text">Prêt à enregistrer</span>
+                    </div>
+                    
+                    <div class="recorder-container" id="recorder-container">
+                        <div class="recorder-timer" id="recorder-timer">00:00</div>
+                        
+                        <div class="audio-wave" id="audio-wave" style="display: none;">
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                            <div class="wave-bar"></div>
+                        </div>
+                        
+                        <div class="recorder-visualizer" id="recorder-visualizer">
+                            <!-- Les barres du visualiseur seront ajoutées dynamiquement -->
+                        </div>
+                        
+                        <div class="recorder-controls">
+                            <button type="button" class="btn btn-icon btn-record" id="start-recording">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                            
+                            <button type="button" class="btn btn-icon btn-audio" id="pause-recording" style="display: none;">
+                                <i class="fas fa-pause"></i>
+                            </button>
+                            
+                            <button type="button" class="btn btn-icon btn-audio" id="resume-recording" style="display: none;">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            
+                            <button type="button" class="btn btn-icon btn-secondary" id="stop-recording" style="display: none;">
+                                <i class="fas fa-stop"></i>
+                            </button>
+                            
+                            <button type="button" class="btn btn-icon btn-secondary" id="restart-recording" style="display: none;">
+                                <i class="fas fa-redo"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Transcription -->
+                    <div class="transcription-container" id="transcription-container" style="display: none;">
+                        <div class="transcription-header">
+                            <h4><i class="fas fa-keyboard"></i> Transcription en temps réel</h4>
+                            <div class="transcription-history" id="transcription-history">
+                                <i class="fas fa-history"></i> <span id="history-count">Aucun enregistrement</span>
+                            </div>
+                        </div>
+                        <div class="transcription-text" id="transcription-text">
+                            Votre transcription apparaîtra ici au fur et à mesure que vous parlerez...
+                        </div>
+                        <div class="transcription-actions">
+                            <button type="button" class="btn btn-secondary" id="edit-transcription">
+                                <i class="fas fa-edit"></i> Modifier la transcription
+                            </button>
+                            <button type="button" class="btn" id="save-transcription" style="display: none;">
+                                <i class="fas fa-save"></i> Sauvegarder les modifications
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Réponse de l'IA -->
+                <div class="response-container" id="response-container">
+                    <h3 class="response-header">
+                        <i class="fas fa-robot"></i>
+                        Analyse de votre œuvre par l'IA
+                    </h3>
+                    <div class="response-content" id="response-content"></div>
+                </div>
+                
+                <!-- Bouton d'envoi final -->
+                <div style="margin-top: 2rem;">
+                    <button type="submit" class="btn btn-large btn-full" id="submit-btn" disabled>
+                        <i class="fas fa-paper-plane"></i> Publier l'Œuvre
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Page de présentation -->
+    <div class="presentation-container" id="presentation-container">
+        <div class="back-button">
+            <button class="btn btn-secondary" id="back-to-form">
+                <i class="fas fa-arrow-left"></i> Retour au formulaire
+            </button>
+        </div>
+
+        <header class="presentation-header">
+            <h1 id="presentation-title">Objet Artisanal du Fouta Djallon</h1>
+            <p id="presentation-subtitle">Une pièce unique, témoin d'une tradition séculaire</p>
+        </header>
+
+        <div class="language-toggle">
+            <button class="toggle-btn active" data-lang="fr">Français</button>
+            <button class="toggle-btn" data-lang="en">English</button>
+        </div>
+
+        <div id="presentation-content">
+            <div class="presentation-loading">
+                <div class="presentation-spinner"></div>
             </div>
-            <div class="form-group">
-                <label for="fileName">Nom du fichier (optionnel):</label>
-                <input type="text" id="fileName" placeholder="mon-enregistrement">
-            </div>
-            <button id="testWebhook" class="test-btn">Tester la connexion</button>
         </div>
     </div>
 
     <script>
-        // Variables globales
-        let mediaRecorder;
-        let audioChunks = [];
-        let recordingStartTime;
-        let timerInterval;
-        let audioBlob = null;
-        
-        // Éléments DOM
-        const recordBtn = document.getElementById('recordBtn');
-        const timer = document.getElementById('timer');
-        const controls = document.getElementById('controls');
-        const saveBtn = document.getElementById('saveBtn');
-        const cancelBtn = document.getElementById('cancelBtn');
-        const status = document.getElementById('status');
-        const audioPlayer = document.getElementById('audioPlayer');
-        const webhookUrlInput = document.getElementById('webhookUrl');
-        const fileNameInput = document.getElementById('fileName');
-        const testWebhookBtn = document.getElementById('testWebhook');
-        
-        // Fonction pour formater le temps
-        function formatTime(seconds) {
-            const mins = Math.floor(seconds / 60);
-            const secs = seconds % 60;
-            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        }
-        
-        // Mise à jour du timer
-        function updateTimer() {
-            const elapsedSeconds = Math.floor((Date.now() - recordingStartTime) / 1000);
-            timer.textContent = formatTime(elapsedSeconds);
-        }
-        
-        // Début de l'enregistrement
-        async function startRecording() {
-            try {
-                // Demander l'accès au microphone
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    audio: {
-                        sampleRate: 16000,
-                        channelCount: 1,
-                        echoCancellation: true
-                    } 
+        // Configuration de l'API
+        const API_CONFIG = {
+            API_KEY: "or_a08d02287eb9c14b7958372c7bf7d27a76e26d615cd0ac1fdef9042e",
+            URL: "https://oreus-staging.dev2.dev-id.fr/api/v1/sdk/chat/completions"
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // ===== ÉLÉMENTS DU DOM =====
+            const formContainer = document.getElementById('form-container');
+            const presentationContainer = document.getElementById('presentation-container');
+            const uploadCards = document.querySelectorAll('.upload-card');
+            const photoInputs = document.querySelectorAll('.upload-input');
+            const photosPreview = document.getElementById('photos-preview');
+            const startRecordingBtn = document.getElementById('start-recording');
+            const pauseRecordingBtn = document.getElementById('pause-recording');
+            const resumeRecordingBtn = document.getElementById('resume-recording');
+            const stopRecordingBtn = document.getElementById('stop-recording');
+            const restartRecordingBtn = document.getElementById('restart-recording');
+            const recorderContainer = document.getElementById('recorder-container');
+            const statusIndicator = document.getElementById('status-indicator');
+            const statusText = document.getElementById('status-text');
+            const recorderTimer = document.getElementById('recorder-timer');
+            const recorderVisualizer = document.getElementById('recorder-visualizer');
+            const audioWave = document.getElementById('audio-wave');
+            const transcriptionContainer = document.getElementById('transcription-container');
+            const transcriptionText = document.getElementById('transcription-text');
+            const transcriptionHistory = document.getElementById('transcription-history');
+            const historyCount = document.getElementById('history-count');
+            const editTranscriptionBtn = document.getElementById('edit-transcription');
+            const saveTranscriptionBtn = document.getElementById('save-transcription');
+            const submitBtn = document.getElementById('submit-btn');
+            const artworkForm = document.getElementById('artwork-form');
+            const artworkTitle = document.getElementById('artwork-title');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const responseContainer = document.getElementById('response-container');
+            const responseContent = document.getElementById('response-content');
+            const backToFormBtn = document.getElementById('back-to-form');
+            const presentationTitle = document.getElementById('presentation-title');
+            const presentationSubtitle = document.getElementById('presentation-subtitle');
+            const presentationContent = document.getElementById('presentation-content');
+            
+            // ===== VARIABLES GLOBALES =====
+            let mediaRecorder;
+            let audioChunks = [];
+            let recordingTimer;
+            let seconds = 0;
+            let isPaused = false;
+            let isRecording = false;
+            let transcription = "";
+            let transcriptionHistoryText = "";
+            let visualizerBars = [];
+            let recognition;
+            let recordedAudioBlob = null;
+            let photoCount = 0;
+            let aiResponseData = null;
+            
+            // ===== INITIALISATION =====
+            initVisualizer();
+            checkFormCompletion();
+            
+            // ===== GESTION DES UPLOADS DE PHOTOS =====
+            uploadCards.forEach(card => {
+                const input = card.querySelector('.upload-input');
+                
+                card.addEventListener('click', function() {
+                    input.click();
                 });
                 
-                // Initialiser MediaRecorder avec un format compatible
-                const options = {
-                    mimeType: 'audio/webm;codecs=opus',
-                    audioBitsPerSecond: 128000
+                input.addEventListener('change', function() {
+                    if (this.files.length > 0) {
+                        handlePhotoUpload(this.files[0], this.getAttribute('data-index'));
+                    }
+                });
+            });
+            
+            function handlePhotoUpload(file, index) {
+                if (!file.type.match('image.*')) {
+                    alert('Veuillez sélectionner une image valide.');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const previewItem = document.createElement('div');
+                    previewItem.className = 'preview-item';
+                    previewItem.setAttribute('data-index', index);
+                    
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'remove-preview';
+                    removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                    removeBtn.addEventListener('click', function() {
+                        previewItem.remove();
+                        // Réactiver la carte d'upload correspondante
+                        const card = document.querySelector(`.upload-card[data-index="${index}"]`);
+                        card.style.display = 'block';
+                        photoCount--;
+                        checkFormCompletion();
+                    });
+                    
+                    previewItem.appendChild(img);
+                    previewItem.appendChild(removeBtn);
+                    
+                    // Masquer la carte d'upload correspondante
+                    const card = document.querySelector(`.upload-card[data-index="${index}"]`);
+                    card.style.display = 'none';
+                    
+                    // Vérifier si une preview existe déjà pour cet index
+                    const existingPreview = photosPreview.querySelector(`[data-index="${index}"]`);
+                    if (existingPreview) {
+                        existingPreview.remove();
+                    } else {
+                        photoCount++;
+                    checkFormCompletion();
+                    }
+                    
+                    photosPreview.appendChild(previewItem);
                 };
                 
-                mediaRecorder = new MediaRecorder(stream, options);
-                audioChunks = [];
+                reader.readAsDataURL(file);
+            }
+            
+            // ===== INITIALISATION DU VISUALISEUR =====
+            function initVisualizer() {
+                recorderVisualizer.innerHTML = '';
+                visualizerBars = [];
+                const barCount = 25;
                 
-                // Événement pour collecter les données audio
-                mediaRecorder.ondataavailable = (event) => {
-                    if (event.data.size > 0) {
-                        audioChunks.push(event.data);
+                for (let i = 0; i < barCount; i++) {
+                    const bar = document.createElement('div');
+                    bar.className = 'visualizer-bar';
+                    bar.style.height = '5px';
+                    visualizerBars.push(bar);
+                    recorderVisualizer.appendChild(bar);
+                }
+            }
+            
+            // ===== MISE À JOUR DU VISUALISEUR =====
+            function updateVisualizer() {
+                visualizerBars.forEach(bar => {
+                    const randomHeight = Math.random() * 80 + 10;
+                    bar.style.height = `${randomHeight}%`;
+                });
+            }
+            
+            // ===== GESTION DU TIMER =====
+            function updateTimer() {
+                if (!isPaused && isRecording) {
+                    seconds++;
+                    const minutes = Math.floor(seconds / 60);
+                    const remainingSeconds = seconds % 60;
+                    recorderTimer.textContent = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+                    
+                    // Mettre à jour le visualiseur
+                    updateVisualizer();
+                }
+            }
+            
+            // ===== RECONNAISSANCE VOCALE =====
+            function initSpeechRecognition() {
+                // Vérifier si la reconnaissance vocale est supportée
+                if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                    alert('Votre navigateur ne supporte pas la reconnaissance vocale. Essayez Chrome ou Edge.');
+                    return null;
+                }
+                
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                
+                recognition.continuous = true;
+                recognition.interimResults = true;
+                recognition.lang = 'fr-FR';
+                
+                recognition.onstart = function() {
+                    console.log('Reconnaissance vocale démarrée');
+                };
+                
+                recognition.onresult = function(event) {
+                    let interimTranscript = '';
+                    let finalTranscript = '';
+                    
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript;
+                        } else {
+                            interimTranscript += transcript;
+                        }
+                    }
+                    
+                    // Mettre à jour la transcription
+                    if (finalTranscript) {
+                        transcription += finalTranscript + ' ';
+                    }
+                    
+                    // Afficher la transcription en temps réel
+                    transcriptionText.textContent = transcription + interimTranscript;
+                };
+                
+                recognition.onerror = function(event) {
+                    console.error('Erreur de reconnaissance:', event.error);
+                    if (event.error === 'not-allowed') {
+                        alert('Permission microphone refusée. Veuillez autoriser l\'accès au microphone.');
                     }
                 };
                 
-                // Événement de fin d'enregistrement
-                mediaRecorder.onstop = () => {
-                    // Créer un blob audio
-                    audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    
-                    // Créer un URL pour la prévisualisation
-                    const audioUrl = URL.createObjectURL(audioBlob);
-                    audioPlayer.src = audioUrl;
-                    audioPlayer.classList.remove('hidden');
-                    
-                    // Arrêter le flux
-                    stream.getTracks().forEach(track => track.stop());
+                recognition.onend = function() {
+                    console.log('Reconnaissance vocale terminée');
+                    // Redémarrer la reconnaissance si on est toujours en train d'enregistrer
+                    if (isRecording && !isPaused) {
+                        recognition.start();
+                    }
                 };
                 
-                // Démarrer l'enregistrement
-                mediaRecorder.start(1000); // Collecter des données chaque seconde
-                recordingStartTime = Date.now();
-                
-                // Mettre à jour l'interface
-                recordBtn.classList.add('recording');
-                recordBtn.innerHTML = '<span class="icon">⏹️</span><span>Arrêter</span>';
-                timer.classList.remove('hidden');
-                controls.classList.add('hidden');
-                
-                // Démarrer le timer
-                timerInterval = setInterval(updateTimer, 1000);
-                
-                // Afficher le statut
-                showStatus('Enregistrement en cours...', 'info');
-                
-            } catch (error) {
-                console.error('Erreur lors de l\'accès au microphone:', error);
-                showStatus('Erreur: Impossible d\'accéder au microphone', 'error');
-            }
-        }
-        
-        // Arrêt de l'enregistrement
-        function stopRecording() {
-            if (mediaRecorder && mediaRecorder.state === 'recording') {
-                mediaRecorder.stop();
-                
-                // Arrêter le timer
-                clearInterval(timerInterval);
-                
-                // Mettre à jour l'interface
-                recordBtn.classList.remove('recording');
-                recordBtn.innerHTML = '<span class="icon">🎙️</span><span>Enregistrer</span>';
-                controls.classList.remove('hidden');
-                
-                // Afficher le statut
-                showStatus('Enregistrement terminé. Cliquez sur "OK" pour envoyer.', 'info');
-            }
-        }
-        
-        // Envoi de l'audio via webhook
-        async function sendAudio() {
-            if (!audioBlob) {
-                showStatus('Aucun enregistrement à envoyer', 'error');
-                return;
+                return recognition;
             }
             
-            const webhookURL = webhookUrlInput.value.trim();
-            if (!webhookURL) {
-                showStatus('Veuillez configurer l\'URL du webhook', 'error');
-                return;
-            }
-            
-            try {
-                showStatus('Envoi en cours...', 'info');
-                
-                // Générer un nom de fichier
-                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-                const customName = fileNameInput.value.trim();
-                const filename = customName ? 
-                    `${customName}.webm` : 
-                    `enregistrement-${timestamp}.webm`;
-                
-                // Créer FormData avec le fichier binaire
-                const formData = new FormData();
-                formData.append('data', audioBlob, filename);
-                formData.append('filename', filename);
-                formData.append('timestamp', timestamp);
-                formData.append('duration', Math.floor((Date.now() - recordingStartTime) / 1000));
-                formData.append('size', audioBlob.size);
-                formData.append('mimeType', 'audio/webm');
-                
-                // Envoyer via fetch
-                const response = await fetch(webhookURL, {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (response.ok) {
-                    const responseData = await response.text();
-                    showStatus('Audio envoyé avec succès à n8n!', 'success');
+            // ===== DÉMARRER L'ENREGISTREMENT =====
+            startRecordingBtn.addEventListener('click', async function() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            sampleRate: 44100
+                        } 
+                    });
                     
-                    // Réinitialiser l'interface après un délai
-                    setTimeout(() => {
-                        resetInterface();
-                    }, 3000);
-                } else {
-                    throw new Error(`Erreur HTTP: ${response.status} - ${response.statusText}`);
+                    // Initialiser la reconnaissance vocale
+                    recognition = initSpeechRecognition();
+                    if (!recognition) return;
+                    
+                    // Initialiser l'enregistreur audio
+                    mediaRecorder = new MediaRecorder(stream, {
+                        mimeType: 'audio/webm;codecs=opus'
+                    });
+                    
+                    mediaRecorder.ondataavailable = function(event) {
+                        audioChunks.push(event.data);
+                    };
+                    
+                    mediaRecorder.onstop = function() {
+                        recordedAudioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        console.log('Audio enregistré:', recordedAudioBlob);
+                    };
+                    
+                    // Démarrer l'enregistrement
+                    mediaRecorder.start(1000); // Collecte des données chaque seconde
+                    audioChunks = [];
+                    isRecording = true;
+                    
+                    // Démarrer la reconnaissance vocale
+                    recognition.start();
+                    
+                    // Mettre à jour l'interface
+                    statusIndicator.className = 'status-indicator status-recording';
+                    statusText.textContent = "Enregistrement en cours...";
+                    startRecordingBtn.classList.add('recording');
+                    startRecordingBtn.style.display = 'none';
+                    pauseRecordingBtn.style.display = 'flex';
+                    stopRecordingBtn.style.display = 'flex';
+                    restartRecordingBtn.style.display = 'flex';
+                    audioWave.style.display = 'flex';
+                    
+                    // Afficher la section de transcription
+                    transcriptionContainer.style.display = 'block';
+                    
+                    // Démarrer le timer
+                    seconds = 0;
+                    isPaused = false;
+                    recordingTimer = setInterval(updateTimer, 1000);
+                    
+                } catch (error) {
+                    alert('Impossible d\'accéder au microphone. Vérifiez les permissions de votre navigateur.');
+                    console.error('Erreur d\'enregistrement:', error);
+                }
+            });
+            
+            // ===== METTRE EN PAUSE L'ENREGISTREMENT =====
+            pauseRecordingBtn.addEventListener('click', function() {
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.pause();
+                    if (recognition) recognition.stop();
+                    clearInterval(recordingTimer);
+                    isPaused = true;
+                    pauseRecordingBtn.style.display = 'none';
+                    resumeRecordingBtn.style.display = 'flex';
+                    statusIndicator.className = 'status-indicator status-paused';
+                    statusText.textContent = "Enregistrement en pause";
+                    audioWave.style.display = 'none';
+                }
+            });
+            
+            // ===== REPRENDRE L'ENREGISTREMENT =====
+            resumeRecordingBtn.addEventListener('click', function() {
+                if (mediaRecorder && mediaRecorder.state === 'paused') {
+                    mediaRecorder.resume();
+                    if (recognition) recognition.start();
+                    recordingTimer = setInterval(updateTimer, 1000);
+                    isPaused = false;
+                    pauseRecordingBtn.style.display = 'flex';
+                    resumeRecordingBtn.style.display = 'none';
+                    statusIndicator.className = 'status-indicator status-recording';
+                    statusText.textContent = "Enregistrement en cours...";
+                    audioWave.style.display = 'flex';
+                }
+            });
+            
+            // ===== ARRÊTER L'ENREGISTREMENT =====
+            stopRecordingBtn.addEventListener('click', function() {
+                if (mediaRecorder && (mediaRecorder.state === 'recording' || mediaRecorder.state === 'paused')) {
+                    mediaRecorder.stop();
+                    if (recognition) recognition.stop();
+                    clearInterval(recordingTimer);
+                    isRecording = false;
+                    
+                    // Mettre à jour l'interface
+                    statusIndicator.className = 'status-indicator status-ready';
+                    statusText.textContent = "Enregistrement terminé";
+                    startRecordingBtn.classList.remove('recording');
+                    startRecordingBtn.style.display = 'flex';
+                    pauseRecordingBtn.style.display = 'none';
+                    resumeRecordingBtn.style.display = 'none';
+                    stopRecordingBtn.style.display = 'none';
+                    restartRecordingBtn.style.display = 'none';
+                    audioWave.style.display = 'none';
+                    
+                    // Sauvegarder l'historique
+                    if (transcription.trim()) {
+                        const timestamp = new Date().toLocaleTimeString('fr-FR');
+                        transcriptionHistoryText += `[${timestamp}] ${transcription}\n\n`;
+                        const historyItems = transcriptionHistoryText.split('\n\n').filter(t => t.trim());
+                        historyCount.textContent = `${historyItems.length} enregistrement(s) sauvegardé(s)`;
+                    }
+                    
+                    // Vérifier la complétion du formulaire
+                    checkFormCompletion();
+                }
+            });
+            
+            // ===== RECOMMENCER L'ENREGISTREMENT =====
+            restartRecordingBtn.addEventListener('click', function() {
+                if (mediaRecorder && (mediaRecorder.state === 'recording' || mediaRecorder.state === 'paused')) {
+                    mediaRecorder.stop();
+                }
+                if (recognition) recognition.stop();
+                clearInterval(recordingTimer);
+                
+                // Réinitialiser
+                seconds = 0;
+                recorderTimer.textContent = "00:00";
+                transcription = "";
+                transcriptionText.textContent = "Votre transcription apparaîtra ici au fur et à mesure que vous parlerez...";
+                initVisualizer();
+                recordedAudioBlob = null;
+                
+                // Réafficher le bouton d'enregistrement
+                statusIndicator.className = 'status-indicator status-ready';
+                statusText.textContent = "Prêt à enregistrer";
+                startRecordingBtn.classList.remove('recording');
+                startRecordingBtn.style.display = 'flex';
+                pauseRecordingBtn.style.display = 'none';
+                resumeRecordingBtn.style.display = 'none';
+                stopRecordingBtn.style.display = 'none';
+                restartRecordingBtn.style.display = 'none';
+                audioWave.style.display = 'none';
+                
+                // Masquer la transcription si c'est le premier enregistrement
+                if (!transcriptionHistoryText) {
+                    transcriptionContainer.style.display = 'none';
                 }
                 
-            } catch (error) {
-                console.error('Erreur lors de l\'envoi:', error);
-                showStatus(`Erreur lors de l'envoi: ${error.message}`, 'error');
-            }
-        }
-        
-        // Test de la connexion webhook
-        async function testWebhook() {
-            const webhookURL = webhookUrlInput.value.trim();
-            if (!webhookURL) {
-                showStatus('Veuillez entrer une URL de webhook', 'error');
-                return;
+                // Réinitialiser les chunks audio
+                audioChunks = [];
+                
+                // Vérifier la complétion du formulaire
+                checkFormCompletion();
+            });
+            
+            // ===== ÉDITION DE LA TRANSCRIPTION =====
+            editTranscriptionBtn.addEventListener('click', function() {
+                transcriptionText.contentEditable = true;
+                transcriptionText.classList.add('editable');
+                transcriptionText.focus();
+                editTranscriptionBtn.style.display = 'none';
+                saveTranscriptionBtn.style.display = 'flex';
+            });
+            
+            saveTranscriptionBtn.addEventListener('click', function() {
+                transcriptionText.contentEditable = false;
+                transcriptionText.classList.remove('editable');
+                transcription = transcriptionText.textContent;
+                editTranscriptionBtn.style.display = 'flex';
+                saveTranscriptionBtn.style.display = 'none';
+                
+                // Mettre à jour l'historique avec la version modifiée
+                if (transcriptionHistoryText) {
+                    const historyItems = transcriptionHistoryText.split('\n\n');
+                    if (historyItems.length > 0) {
+                        historyItems[historyItems.length - 1] = historyItems[historyItems.length - 1].split(']')[0] + '] ' + transcription;
+                        transcriptionHistoryText = historyItems.join('\n\n');
+                    }
+                }
+                
+                alert('Transcription sauvegardée avec succès !');
+            });
+            
+            // ===== VÉRIFICATION DE LA COMPLÉTION DU FORMULAIRE =====
+            function checkFormCompletion() {
+                const titleFilled = artworkTitle.value.trim() !== '';
+                const photosFilled = photoCount >= 2;
+                const audioRecorded = recordedAudioBlob !== null;
+                
+                if (titleFilled && photosFilled && audioRecorded) {
+                    submitBtn.disabled = false;
+                } else {
+                    submitBtn.disabled = true;
+                }
             }
             
-            try {
-                showStatus('Test de connexion en cours...', 'info');
+            // Écouter les changements dans le formulaire
+            artworkTitle.addEventListener('input', checkFormCompletion);
+            
+            // ===== ENVOI AU MODÈLE IA =====
+            async function sendToAI(title, transcription) {
+                try {
+                    // Afficher l'animation de chargement
+                    loadingOverlay.style.display = 'flex';
+                    
+                    const formData = new FormData();
+                    formData.append('model', 'Artisan2.0');
+                    formData.append('messages[0][role]', 'user');
+                    formData.append('messages[0][content]', `Titre de l'œuvre: ${title}\n\nDescription audio: ${transcription}\n\nPeux-tu analyser cette œuvre artisanale et me donner ton avis ?`);
+                    
+                    const response = await fetch(API_CONFIG.URL, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${API_CONFIG.API_KEY}`
+                        },
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Erreur HTTP: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Cacher l'animation de chargement
+                    loadingOverlay.style.display = 'none';
+                    
+                    return data;
+                    
+                } catch (error) {
+                    console.error('Erreur lors de l\'envoi à l\'API:', error);
+                    loadingOverlay.style.display = 'none';
+                    throw error;
+                }
+            }
+            
+            // ===== ANALYSE DE LA RÉPONSE IA ET GÉNÉRATION DE LA PRÉSENTATION =====
+            function parseAIResponse(aiResponse) {
+                try {
+                    // Extraire le contenu de la réponse
+                    const content = aiResponse.choices?.[0]?.message?.content || "";
+                    
+                    // Essayer de parser le JSON directement
+                    try {
+                        return JSON.parse(content);
+                    } catch (e) {
+                        console.warn("La réponse n'est pas un JSON valide, tentative d'extraction...");
+                        
+                        // Si le parsing direct échoue, essayer d'extraire le JSON de la réponse
+                        const jsonMatch = content.match(/\{[\s\S]*\}/);
+                        if (jsonMatch) {
+                            return JSON.parse(jsonMatch[0]);
+                        }
+                        
+                        // Si aucune extraction ne fonctionne, créer une structure par défaut
+                        console.error("Impossible d'extraire les données structurées de la réponse IA");
+                        return createDefaultStructure(content);
+                    }
+                } catch (error) {
+                    console.error("Erreur lors du parsing de la réponse IA:", error);
+                    return createDefaultStructure("Erreur lors de l'analyse par l'IA");
+                }
+            }
+            
+            // ===== STRUCTURE PAR DÉFAUT EN CAS D'ERREUR =====
+            function createDefaultStructure(errorMessage) {
+                return {
+                    summary: {
+                        short_description_fr: "Impossible d'analyser cette œuvre avec les informations fournies.",
+                        short_description_en: "Unable to analyze this artwork with the provided information."
+                    },
+                    technical_description: {
+                        materials: {
+                            primary_materials: ["Information non disponible"],
+                            secondary_materials: ["Information non disponible"],
+                            sourcing: "Information non disponible"
+                        },
+                        techniques: {
+                            primary_technique: "Information non disponible",
+                            additional_techniques: ["Information non disponible"],
+                            finishing_process: "Information non disponible"
+                        }
+                    },
+                    cultural_context: {
+                        symbolism_fr: "Information non disponible",
+                        symbolism_en: "Information not available",
+                        usage_fr: "Information non disponible",
+                        usage_en: "Information not available"
+                    }
+                };
+            }
+            
+            // ===== GÉNÉRATION DE LA PAGE DE PRÉSENTATION =====
+            function generatePresentation(artisanData) {
+                presentationTitle.textContent = artworkTitle.value.trim();
+                presentationSubtitle.textContent = "Une pièce unique, analysée par l'IA Artisanat 4.0";
                 
-                const testData = new FormData();
-                testData.append('test', 'true');
-                testData.append('timestamp', new Date().toISOString());
+                // Générer le contenu HTML avec toutes les sections
+                presentationContent.innerHTML = `
+                    <section class="description-section">
+                        <div class="card">
+                            <h2><i class="fas fa-info-circle"></i> Description</h2>
+                            <div class="lang-content active" id="desc-fr">
+                                <p>${artisanData.summary.short_description_fr}</p>
+                            </div>
+                            <div class="lang-content" id="desc-en">
+                                <p>${artisanData.summary.short_description_en}</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    ${artisanData.storytelling ? `
+                    <section class="storytelling-section">
+                        <div class="card">
+                            <h2><i class="fas fa-book"></i> Histoire de l'Œuvre</h2>
+                            <div class="lang-content active" id="story-fr">
+                                <p>${artisanData.storytelling.narrative_fr}</p>
+                            </div>
+                            <div class="lang-content" id="story-en">
+                                <p>${artisanData.storytelling.narrative_en}</p>
+                            </div>
+                        </div>
+                    </section>
+                    ` : ''}
+
+                    <div class="presentation-grid">
+                        <section class="materials-section">
+                            <div class="card">
+                                <h2><i class="fas fa-tree"></i> Matériaux</h2>
+                                <h3>Matériaux principaux</h3>
+                                <ul class="material-list" id="primary-materials">
+                                    ${artisanData.technical_description.materials.primary_materials.map(material => 
+                                        `<li class="material-item">${material}</li>`
+                                    ).join('')}
+                                </ul>
+                                
+                                <h3>Matériaux secondaires</h3>
+                                <ul class="material-list" id="secondary-materials">
+                                    ${artisanData.technical_description.materials.secondary_materials.map(material => 
+                                        `<li class="material-item">${material}</li>`
+                                    ).join('')}
+                                </ul>
+                                
+                                <h3>Approvisionnement</h3>
+                                <p>${artisanData.technical_description.materials.sourcing}</p>
+                            </div>
+                        </section>
+
+                        <section class="techniques-section">
+                            <div class="card">
+                                <h2><i class="fas fa-hammer"></i> Techniques</h2>
+                                <h3>Technique principale</h3>
+                                <p>${artisanData.technical_description.techniques.primary_technique}</p>
+                                
+                                <h3>Techniques supplémentaires</h3>
+                                <ul class="technique-list" id="additional-techniques">
+                                    ${artisanData.technical_description.techniques.additional_techniques.map(technique => 
+                                        `<li class="technique-item">${technique}</li>`
+                                    ).join('')}
+                                </ul>
+                                
+                                <h3>Processus de finition</h3>
+                                <p>${artisanData.technical_description.techniques.finishing_process}</p>
+                            </div>
+                        </section>
+                    </div>
+
+                    ${artisanData.technical_description.dimensions ? `
+                    <section class="dimensions-section">
+                        <div class="card">
+                            <h2><i class="fas fa-ruler-combined"></i> Dimensions</h2>
+                            <p><strong>Dimensions typiques :</strong> ${artisanData.technical_description.dimensions.typical}</p>
+                            ${artisanData.technical_description.dimensions.provided ? 
+                                `<p><strong>Dimensions fournies :</strong> ${artisanData.technical_description.dimensions.provided}</p>` : ''}
+                        </div>
+                    </section>
+                    ` : ''}
+
+                    ${artisanData.technical_description.creation_time ? `
+                    <section class="creation-time-section">
+                        <div class="card">
+                            <h2><i class="fas fa-clock"></i> Temps de Création</h2>
+                            <p><strong>Durée :</strong> ${artisanData.technical_description.creation_time.value}</p>
+                            <p><em>${artisanData.technical_description.creation_time.context}</em></p>
+                        </div>
+                    </section>
+                    ` : ''}
+
+                    ${artisanData.technical_description.origin ? `
+                    <section class="origin-section">
+                        <div class="card">
+                            <h2><i class="fas fa-map-marker-alt"></i> Origine</h2>
+                            <p><strong>Région :</strong> ${artisanData.technical_description.origin.region}</p>
+                            <p><strong>Groupe culturel :</strong> ${artisanData.technical_description.origin.cultural_group}</p>
+                        </div>
+                    </section>
+                    ` : ''}
+
+                    ${artisanData.artisan_profile ? `
+                    <section class="artisan-section">
+                        <div class="card">
+                            <h2><i class="fas fa-user"></i> Artisan</h2>
+                            <h3>${artisanData.artisan_profile.name}</h3>
+                            
+                            <div class="lang-content active" id="bio-fr">
+                                <p>${artisanData.artisan_profile.biography.fr}</p>
+                            </div>
+                            <div class="lang-content" id="bio-en">
+                                <p>${artisanData.artisan_profile.biography.en}</p>
+                            </div>
+                            
+                            <h3>Compétences</h3>
+                            <ul class="technique-list">
+                                ${artisanData.artisan_profile.skills.map(skill => 
+                                    `<li class="technique-item">${skill}</li>`
+                                ).join('')}
+                            </ul>
+                            
+                            ${artisanData.artisan_profile.cooperative ? `
+                            <h3>Coopérative</h3>
+                            <p><strong>${artisanData.artisan_profile.cooperative.name}</strong> - ${artisanData.artisan_profile.cooperative.role}</p>
+                            ` : ''}
+                        </div>
+                    </section>
+                    ` : ''}
+
+                    <div class="presentation-grid">
+                        <section class="symbolism-section">
+                            <div class="card">
+                                <h2><i class="fas fa-eye"></i> Symbolisme</h2>
+                                <div class="lang-content active" id="symbolism-fr">
+                                    <p>${artisanData.cultural_context.symbolism_fr}</p>
+                                </div>
+                                <div class="lang-content" id="symbolism-en">
+                                    <p>${artisanData.cultural_context.symbolism_en}</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="usage-section">
+                            <div class="card">
+                                <h2><i class="fas fa-hands"></i> Utilisation</h2>
+                                <div class="lang-content active" id="usage-fr">
+                                    <p>${artisanData.cultural_context.usage_fr}</p>
+                                </div>
+                                <div class="lang-content" id="usage-en">
+                                    <p>${artisanData.cultural_context.usage_en}</p>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                `;
                 
-                const response = await fetch(webhookURL, {
-                    method: 'POST',
-                    body: testData
+                // Ajouter les écouteurs d'événements pour les boutons de langue
+                document.querySelectorAll('.toggle-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const lang = this.getAttribute('data-lang');
+                        switchLanguage(lang);
+                    });
                 });
+            }
+            
+            // ===== CHANGEMENT DE LANGUE =====
+            function switchLanguage(lang) {
+                // Mettre à jour les boutons
+                document.querySelectorAll('.toggle-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                document.querySelector(`.toggle-btn[data-lang="${lang}"]`).classList.add('active');
+
+                // Mettre à jour le contenu
+                document.querySelectorAll('.lang-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.querySelectorAll(`.lang-content[id$="-${lang}"]`).forEach(content => {
+                    content.classList.add('active');
+                });
+            }
+            
+            // ===== NAVIGATION ENTRE LES PAGES =====
+            backToFormBtn.addEventListener('click', function() {
+                formContainer.style.display = 'block';
+                presentationContainer.style.display = 'none';
+            });
+            
+            // ===== SOUMISSION DU FORMULAIRE =====
+            artworkForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
                 
-                if (response.ok) {
-                    showStatus('Connexion au webhook réussie!', 'success');
-                } else {
-                    throw new Error(`Erreur HTTP: ${response.status}`);
+                // Validation finale
+                if (submitBtn.disabled) {
+                    alert('Veuillez compléter tous les champs obligatoires avant de publier.');
+                    return;
                 }
                 
-            } catch (error) {
-                console.error('Erreur lors du test:', error);
-                showStatus(`Erreur de connexion: ${error.message}`, 'error');
-            }
-        }
-        
-        // Annulation de l'enregistrement
-        function cancelRecording() {
-            if (mediaRecorder && mediaRecorder.state === 'recording') {
-                mediaRecorder.stop();
-            }
-            
-            // Arrêter le timer
-            clearInterval(timerInterval);
-            
-            // Réinitialiser l'interface
-            resetInterface();
-            
-            showStatus('Enregistrement annulé', 'info');
-            
-            // Masquer le statut après un délai
-            setTimeout(() => {
-                status.classList.remove('info');
-                status.textContent = '';
-            }, 2000);
-        }
-        
-        // Réinitialisation de l'interface
-        function resetInterface() {
-            recordBtn.classList.remove('recording');
-            recordBtn.innerHTML = '<span class="icon">🎙️</span><span>Enregistrer</span>';
-            timer.classList.add('hidden');
-            controls.classList.add('hidden');
-            audioPlayer.classList.add('hidden');
-            status.classList.remove('success', 'error', 'info');
-            status.textContent = '';
-            audioChunks = [];
-            audioBlob = null;
-        }
-        
-        // Affichage du statut
-        function showStatus(message, type) {
-            status.textContent = message;
-            status.className = 'status';
-            status.classList.add(type);
-        }
-        
-        // Événements
-        recordBtn.addEventListener('click', () => {
-            if (mediaRecorder && mediaRecorder.state === 'recording') {
-                stopRecording();
-            } else {
-                startRecording();
-            }
+                try {
+                    // Récupérer les données
+                    const title = artworkTitle.value.trim();
+                    const finalTranscription = transcription;
+                    
+                    console.log('Envoi au modèle IA:', {
+                        title: title,
+                        transcription: finalTranscription
+                    });
+                    
+                    // Envoyer au modèle IA
+                    const aiResponse = await sendToAI(title, finalTranscription);
+                    
+                    // Parser la réponse IA
+                    aiResponseData = parseAIResponse(aiResponse);
+                    
+                    console.log('Données structurées de l\'IA:', aiResponseData);
+                    
+                    // Générer la page de présentation
+                    generatePresentation(aiResponseData);
+                    
+                    // Afficher la page de présentation
+                    formContainer.style.display = 'none';
+                    presentationContainer.style.display = 'block';
+                    
+                    console.log('Données du formulaire:', {
+                        title: title,
+                        photos: photoCount,
+                        audio: recordedAudioBlob,
+                        transcription: finalTranscription,
+                        aiResponse: aiResponseData
+                    });
+                    
+                } catch (error) {
+                    console.error('Erreur lors du traitement:', error);
+                    alert('Une erreur est survenue lors de l\'analyse par l\'IA. Veuillez réessayer.');
+                }
+            });
         });
-        
-        saveBtn.addEventListener('click', sendAudio);
-        cancelBtn.addEventListener('click', cancelRecording);
-        testWebhookBtn.addEventListener('click', testWebhook);
     </script>
 </body>
 </html>
